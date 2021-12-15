@@ -20,9 +20,11 @@ impl Car {
     }
 }
 
+// In order to support concurrency the trait must be Sync and Send
 pub trait Persistence: Sync + Send {
     fn get(&mut self, brand: String) -> Option<&Car>;
     fn put(&mut self, car: Car);
+    fn len(&self) -> usize;
 }
 
 pub struct DB {
@@ -45,6 +47,10 @@ impl Persistence for DB {
     fn get(&mut self, brand: String) -> Option<&Car> {
         self.items.get(&brand)
     }
+
+    fn len(&self) -> usize {
+        self.items.len() 
+    }
 }
 
 
@@ -66,5 +72,9 @@ impl Service {
 
     pub fn get(&mut self, brand: String) -> Option<&Car> {
         self.pe.get(brand)
+    }
+
+    pub fn count(&self) -> usize {
+        self.pe.len()
     }
 }

@@ -8,19 +8,11 @@ use futures::future;
 use models::Car;
 use models::{DB, Service};
 
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let db = DB::new();
-    let service = Service::new(Box::new(db));
-
+async fn start(svc: &Arc<Mutex<Service>>) {
     let mut spawns = Vec::new();
-
-    let svc_arc = Arc::new(Mutex::new(service));
-
     let mut x = 1;
-    while x < 10 {
-        let svc = Arc::clone(&svc_arc);
+    while x <= 10 {
+        let svc = Arc::clone(&svc);
         let f = tokio::spawn(async move {
             let b = format!("brand-{}", x);
 
@@ -34,8 +26,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     future::join_all(spawns).await;
+}
 
-    println!("Hello, world::: ");
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let db = DB::new();
+   
+    // Service must be moved into the Mutex::new()
+    // Mutex is than moved into an Arc (Atomic Reference counter)
+    let service = Arc::new(Mutex::new(Service::new(Box::new(db))));
+
+    // Invoke start() with the service reference and await so that
+    // all threads finish
+    start(&service).await;
+
+    // Check number of elements
+    let svc = service.lock().unwrap();
+    println!("Elements in the map: {}", svc.count());
 
     Ok(())
 }
