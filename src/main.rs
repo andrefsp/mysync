@@ -1,13 +1,12 @@
-mod models;
-
 use std::sync::{Arc, Mutex};
 
 use tokio;
 use futures::future;
 use hyper::Server;
 
-use models::Car;
-use models::{DB, Repo, MakeSvc};
+use mysync::models::Car;
+use mysync::service::MakeSvc;
+use mysync::persistence::{DB, Repo};
 
 
 async fn start_svc() { 
@@ -30,7 +29,7 @@ async fn start(svc: &Arc<Mutex<Repo>>) {
     let mut spawns = Vec::new();
     let mut x = 1;
     while x <= 10 {
-        let svc = Arc::clone(&svc);
+        let svc = Arc::clone(&svc); // or let svc = svc.clone();
         let f = tokio::spawn(async move {
             let b = format!("brand-{}", x);
 
@@ -47,20 +46,7 @@ async fn start(svc: &Arc<Mutex<Repo>>) {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error +  Sync + Send>> {
-    let db = DB::new();
-   
-    // Repo must be moved into the Mutex::new()
-    // Mutex is than moved into an Arc (Atomic Reference counter)
-    let service = Arc::new(Mutex::new(Repo::new(Box::new(db))));
-
-    // Invoke start() with the service reference and await so that
-    // all threads finish
-    start(&service).await;
-
-    // Check number of elements
-    let svc = service.lock().unwrap();
-    println!("Elements in the map: {}", svc.count());
-
+async fn main() -> Result<(), Box<dyn std::error::Error + Sync + Send>> {
+    start_svc().await;
     Ok(())
 }
