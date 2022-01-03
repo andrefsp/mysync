@@ -2,12 +2,13 @@ use std::sync::{Arc, Mutex};
 use std::str;
 use std::net::SocketAddr;
 
+use tower::make::Shared;
+use hyper::service::service_fn;
+
 use hyper::Request;
 use hyper::Response;
 use hyper::Server;
 use hyper::body::Body;
-
-use hyper::service::{make_service_fn, service_fn};
 
 use super::persistence::Repo;
 use super::models::Car;
@@ -68,21 +69,16 @@ impl Svc {
 
 pub async fn start(svc: Svc, addr: SocketAddr) -> Result<(), hyper::Error>{
 
-    // A `MakeService` that produces a `Service` to handle each connection.
-    let make_service = make_service_fn(move |_| {
-        // We have to clone the context to share it with each invocation of
-        // `make_service`. If your data doesn't implement `Clone` consider using
-        // an `std::sync::Arc`.
-        let svc = svc.clone();
+    // We have to clone the context to share it with each invocation of
+    // `make_service`. If your data doesn't implement `Clone` consider using
+    // an `std::sync::Arc`.
+    let svc = svc.clone();
 
-        // Create a `Service` for responding to the request.
-        let service = service_fn(move |req| {
-            svc.clone().handle(req)
-        });
+    // Create a `Service` for responding to the request.
+    let make_service = Shared::new(service_fn(move |req| {
+        svc.clone().handle(req)
+    }));
 
-        // Return the service to hyper.
-        async move { Ok::<_, hyper::Error>(service) }
-    });
 
     let server = Server::bind(&addr).serve(make_service);
 
