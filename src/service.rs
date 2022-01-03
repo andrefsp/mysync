@@ -1,26 +1,24 @@
-use std::task::Poll;
-use std::task::Context;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::str;
+use std::net::SocketAddr;
 
-use futures::future;
-use futures::executor::block_on;
-
-
-use hyper::service::Service;
 use hyper::Request;
 use hyper::Response;
+use hyper::Server;
 use hyper::body::Body;
 //use hyper::body::HttpBody;
+use hyper::service::{make_service_fn, service_fn};
+use hyper::server::conn::AddrStream;
 
 use super::persistence::Repo;
 use super::models::Car;
 
 
+#[derive(Clone)]
 pub struct Svc {
     repo: Arc<Mutex<Repo>>,
 }
+
 
 impl Svc {
 
@@ -58,54 +56,38 @@ impl Svc {
 }
 
 
-impl Service<Request<Body>> for Svc {
-    type Response = Response<Body>;
-    type Error = hyper::Error;
-    type Future = future::Ready<Result<Self::Response, Self::Error>>;
+pub async fn handle(svc: Svc, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    let resp = match (req.method(), req.uri().path()) {
+        (&hyper::Method::GET, "/") => svc.get_car(req).await,
+        (&hyper::Method::POST, "/") => svc.put_car(req).await,
 
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Ok(()).into()
-    }
-
-    fn call(&mut self, req: Request<Body>) -> Self::Future { 
-        let resp = match (req.method(), req.uri().path()) {
-            (&hyper::Method::GET, "/") => block_on(self.get_car(req)).unwrap(),
-            (&hyper::Method::POST, "/") => block_on(self.put_car(req)).unwrap(),
-
-            _ => Response::builder().status(200).body("".into()).unwrap(),
-        };
-        future::ok(resp)
-    }
+        _ => Ok(Response::new(Body::from("NOT FOUND")) ),
+    };
+    resp
 }
 
 
+pub async fn start(svc: Svc) {
 
-pub struct MakeSvc {
-    repo: Arc<Mutex<Repo>>,
-}
+    // A `MakeService` that produces a `Service` to handle each connection.
+    let make_service = make_service_fn(move |_: &AddrStream| {
+        // We have to clone the context to share it with each invocation of
+        // `make_service`. If your data doesn't implement `Clone` consider using
+        // an `std::sync::Arc`.
+        let svc = svc.clone();
 
+        // Create a `Service` for responding to the request.
+        let service = service_fn(move |req| {
+            handle(svc.clone(), req)
+        });
 
-impl MakeSvc {
-    pub fn new(repo: Arc<Mutex<Repo>>) -> MakeSvc {
-        MakeSvc{
-            repo
-        }
-    }
-}
+        // Return the service to hyper.
+        async move { Ok::<_, hyper::Error>(service) }
+    });
 
-impl<T> Service<T> for MakeSvc {
-    type Response = Svc;
-    type Error = hyper::Error;
-    type Future = Pin<Box<dyn future::Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-    fn poll_ready(&mut self, _: &mut Context) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, _: T) -> Self::Future {
-        let repo = self.repo.clone();
-        Box::pin(async move {
-            Ok(Svc::new( repo )) 
-        })
-    }
+    let server = Server::bind(&addr).serve(make_service);
+    
+    server.await;
 }
