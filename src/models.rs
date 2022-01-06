@@ -3,6 +3,7 @@ use std::fmt::Formatter;
 
 use json;
 
+#[derive(Clone)]
 pub struct Car{
     brand: String
 }
