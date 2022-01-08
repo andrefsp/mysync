@@ -1,10 +1,10 @@
-use std::net::SocketAddr;
-
 use tokio;
+
 use futures::future;
 
 use mysync::models::Car;
 use mysync::service;
+use mysync::httpd::HttpServer;
 use mysync::persistence::{DB, Repo};
 
 
@@ -24,10 +24,8 @@ async fn add_cars(repo: &Repo) {
         spawns.push(f);
         x = x + 1;
     }
-
     future::join_all(spawns).await;
 }
-
 
 async fn start_svc() {
 
@@ -40,8 +38,9 @@ async fn start_svc() {
 
     let svc = service::Svc::new(repo);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    service::start(svc, addr).await.unwrap();
+    let (server, _) = HttpServer::new(svc);
+
+    server.start("127.0.0.1:3000").await.ok();
 }
 
 

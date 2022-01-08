@@ -1,12 +1,7 @@
 use std::str;
-use std::net::SocketAddr;
-
-use tower::make::Shared;
-use hyper::service::service_fn;
 
 use hyper::Request;
 use hyper::Response;
-use hyper::Server;
 use hyper::body::Body;
 
 use super::persistence::Repo;
@@ -68,28 +63,5 @@ impl Svc {
         Svc{
             repo,
         }
-    }
-}
-
-
-pub async fn start(svc: Svc, addr: SocketAddr) -> Result<(), hyper::Error>{
-
-    // Create a `Service` for responding to the request.
-    let make_service = Shared::new(service_fn(move |req| {
-        // clone the service in order to handle the request.
-        //
-        // At every request the service is cloned and the request
-        // is handled exclusively on the handle method which
-        // takes owership of the request but also the wholse
-        // Svc struct.
-        svc.clone().handle(req)
-    }));
-
-
-    let server = Server::bind(&addr).serve(make_service);
-
-    match server.await {
-        Err(err) => Err(hyper::Error::from(err)),
-        _ => Ok(()),
     }
 }
