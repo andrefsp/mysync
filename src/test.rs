@@ -1,13 +1,23 @@
 use tokio::net::TcpStream;
 
+use super::persistence::{DB, Repo};
 use super::httpd::HttpServer;
 use super::service::Svc;
+
+
+pub fn new_svc() -> Svc {
+    let db = DB::new();
+
+    // Create repo.
+    let repo = Repo::new(db);
+
+    Svc::new(repo)
+}
 
 
 pub struct HttpTestServer {
     addr: String,
 }
-
 
 impl HttpTestServer {
 

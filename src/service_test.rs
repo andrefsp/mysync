@@ -1,22 +1,11 @@
 use tokio;
-
-use super::persistence::{DB, Repo};
-use super::service::Svc;
-
 use super::test::HttpTestServer;
+use super::test::new_svc;
 
-async fn new_svc() -> Svc {
-    let db = DB::new();
-
-    // Create repo.
-    let repo = Repo::new(db);
-
-    Svc::new(repo)
-}
 
 #[tokio::test]
 async fn start_and_close() { 
-    let svc = new_svc().await;
+    let svc = new_svc();
     let connect = HttpTestServer::new(svc).await;
     
     assert!(connect.is_ok());
@@ -25,7 +14,8 @@ async fn start_and_close() {
 
     let client = hyper::Client::new();
 
-    let resp = client.get(server.url().parse().unwrap()).await;
+    let url = format!("{}/mercedes", server.url());
+    let resp = client.get(url.parse().unwrap()).await;
   
     assert!(resp.is_ok());
     assert_eq!(resp.unwrap().status(), 200);

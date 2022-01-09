@@ -52,10 +52,16 @@ impl Svc {
     // this method is called at every request.
     pub async fn handle(mut self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
         match (req.method(), req.uri().path()) {
-            (&hyper::Method::GET, "/") => self.get_car(req).await,
+            //(&hyper::Method::GET, "/") => self.get_car(req).await,
             (&hyper::Method::POST, "/") => self.put_car(req).await,
+            (&hyper::Method::GET, r"/{\w+}$") => self.get_car(req).await,
 
-            _ => Ok(Response::new(Body::from("NOT FOUND")) ),
+            _ => Ok(
+                Response::builder()
+                .status(400)
+                .body(Body::from("NOT FOUND"))
+                .unwrap()
+            ),
         }
     }
 
