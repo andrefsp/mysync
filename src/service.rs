@@ -11,7 +11,7 @@ use super::models::Car;
 // therefore this struct must be Clone
 #[derive(Clone)]
 pub struct Svc {
-    repo: Repo,
+    pub repo: Repo,
 }
 
 
@@ -54,7 +54,7 @@ impl Svc {
         match (req.method(), req.uri().path()) {
             //(&hyper::Method::GET, "/") => self.get_car(req).await,
             (&hyper::Method::POST, "/") => self.put_car(req).await,
-            (&hyper::Method::GET, r"/{\w+}$") => self.get_car(req).await,
+            (&hyper::Method::GET, r"/\w+$") => self.get_car(req).await,
 
             _ => Ok(
                 Response::builder()
