@@ -4,8 +4,8 @@ use std::fmt::Formatter;
 use json;
 
 #[derive(Clone)]
-pub struct Car{
-    brand: String
+pub struct Car {
+    brand: String,
 }
 
 impl Display for Car {
@@ -16,9 +16,7 @@ impl Display for Car {
 
 impl Car {
     pub fn new(brand: String) -> Car {
-        Car{
-            brand
-        }
+        Car { brand }
     }
 
     pub fn get_brand(&self) -> String {
@@ -27,8 +25,8 @@ impl Car {
 
     pub fn from_json(payload: String) -> Car {
         let obj = json::parse(payload.as_str()).unwrap();
-        Car{
-            brand: obj["brand"].to_string()
+        Car {
+            brand: obj["brand"].to_string(),
         }
     }
 }

@@ -1,9 +1,8 @@
 use tokio::net::TcpStream;
 
-use super::persistence::{DB, Repo};
 use super::httpd::HttpServer;
+use super::persistence::{Repo, DB};
 use super::service::Svc;
-
 
 pub fn new_svc() -> Svc {
     let db = DB::new();
@@ -14,13 +13,11 @@ pub fn new_svc() -> Svc {
     Svc::new(repo)
 }
 
-
 pub struct HttpTestServer {
     addr: String,
 }
 
 impl HttpTestServer {
-
     pub fn url(&self) -> String {
         format!("http://{}", self.addr)
     }
@@ -29,17 +26,15 @@ impl HttpTestServer {
         "127.0.0.1:3000".to_string()
     }
 
-    pub async fn new(svc: Svc) -> Result<(HttpTestServer, Box<dyn FnOnce() + Sync + Send>), std::io::Error> {
+    pub async fn new(
+        svc: Svc,
+    ) -> Result<(HttpTestServer, Box<dyn FnOnce() + Sync + Send>), std::io::Error> {
         let (server, stop) = HttpServer::new(svc);
 
         let addr = HttpTestServer::pick_addr();
 
-        let t_server = HttpTestServer{
-            addr: addr.clone(),
-        };
-        tokio::spawn(async move {
-            server.start(addr.as_str()).await
-        });
+        let t_server = HttpTestServer { addr: addr.clone() };
+        tokio::spawn(async move { server.start(addr.as_str()).await });
 
         for _ in 1..10 {
             let stm = TcpStream::connect(t_server.addr.clone()).await;
@@ -48,6 +43,9 @@ impl HttpTestServer {
                 _ => continue,
             }
         }
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "an error has occured"))
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "an error has occured",
+        ))
     }
 }

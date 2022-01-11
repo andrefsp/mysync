@@ -12,3 +12,4 @@ hyper = { version = "0.14.16", features = ["full"] }
 async-trait = { version = "0.1.52" }
 json = { version = "0.12.4" }
 tower = { version =  "0.4.11", features = ["full"] }
+routerify = { version = "3.0.0" }
