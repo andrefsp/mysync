@@ -70,10 +70,10 @@ impl Repo {
         self.pe.put(car).await;
     }
 
-    pub async fn get(&mut self, brand: String) -> Option<Car> {
+    pub async fn get(&self, brand: String) -> Option<Car> {
         self.pe.get(brand).await
     }
-    pub async fn count(&mut self) -> usize {
+    pub async fn count(&self) -> usize {
         self.pe.len().await
     }
 }

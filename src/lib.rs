@@ -1,3 +1,4 @@
+pub mod handlers;
 pub mod httpd;
 pub mod models;
 pub mod persistence;
